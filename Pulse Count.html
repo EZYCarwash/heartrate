@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manual Heart-Rate Counter</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin: 1rem;
+      padding: 0;
+      max-width: 480px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+    }
+
+    #timer {
+      font-size: 1.2rem;
+      margin-top: 0.5rem;
+    }
+
+    button {
+      padding: 1rem 1.5rem;
+      font-size: 1.2rem;
+      margin: 0.4rem;
+      width: 45%;
+      max-width: 200px;
+    }
+
+    #bpm {
+      font-size: 2.5rem;
+      margin-top: 1rem;
+    }
+
+    #status-face {
+      font-size: 3rem;
+      margin-top: 0.5rem;
+    }
+
+    .slider-group {
+      margin-top: 1.5rem;
+    }
+
+    .slider-label {
+      font-size: 1rem;
+      margin-bottom: 0.3rem;
+      display: block;
+    }
+
+    input[type=range] {
+      width: 90%;
+      max-width: 400px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>กดตามจังหวะชีพจร</h1>
+<p id="timer">0.0 s</p>
+
+<div style="display:flex; justify-content: center; flex-wrap: wrap;">
+  <button id="pulseBtn">PULSE</button>
+  <button id="resetBtn">RESET</button>
+</div>
+
+<div id="bpm">— BPM —</div>
+<div id="status-face">😐</div>
+
+<div class="slider-group">
+  <label class="slider-label">BPM ต่ำสุด: <span id="minVal">60</span></label>
+  <input type="range" id="minSlider" min="40" max="160" value="60">
+</div>
+
+<div class="slider-group">
+  <label class="slider-label">BPM สูงสุด: <span id="maxVal">100</span></label>
+  <input type="range" id="maxSlider" min="40" max="200" value="100">
+</div>
+
+<script>
+let start     = performance.now();
+let lastTap   = null;
+let intervals = [];
+
+const timerDisplay = document.getElementById('timer');
+const bpmDisplay = document.getElementById('bpm');
+const faceDisplay = document.getElementById('status-face');
+
+const minSlider = document.getElementById('minSlider');
+const maxSlider = document.getElementById('maxSlider');
+const minVal = document.getElementById('minVal');
+const maxVal = document.getElementById('maxVal');
+
+// อัปเดตค่าที่แสดงข้าง slider
+minSlider.addEventListener('input', ()=> minVal.textContent = minSlider.value);
+maxSlider.addEventListener('input', ()=> maxVal.textContent = maxSlider.value);
+
+// ตัวจับเวลา
+setInterval(()=>{
+  const ms = performance.now() - start;
+  timerDisplay.textContent = (ms/1000).toFixed(1)+' s';
+}, 100);
+
+// คำนวณ BPM
+function updateBPM() {
+  const k = 10;
+  const recent = intervals.slice(-k);
+  const avg = recent.reduce((a,b)=>a+b,0)/recent.length;
+  const bpm = 60 / avg;
+  bpmDisplay.textContent = bpm.toFixed(1) + ' ครั้ง/นาที';
+
+  const minBPM = parseInt(minSlider.value);
+  const maxBPM = parseInt(maxSlider.value);
+  if (bpm >= minBPM && bpm <= maxBPM) {
+    faceDisplay.textContent = "😄";
+  } else {
+    faceDisplay.textContent = "😟";
+  }
+}
+
+// ปุ่ม PULSE
+document.getElementById('pulseBtn').addEventListener('click', ()=>{
+  const now = performance.now();
+  if (lastTap) {
+    const diff = (now - lastTap) / 1000;
+    intervals.push(diff);
+    if (intervals.length >= 2) {
+      updateBPM();
+    }
+  }
+  lastTap = now;
+});
+
+// ปุ่ม RESET
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  start = performance.now();
+  lastTap = null;
+  intervals = [];
+  bpmDisplay.textContent = '— BPM —';
+  faceDisplay.textContent = '😐';
+});
+</script>
+</body>
+</html>
